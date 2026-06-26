@@ -4,6 +4,7 @@ import webbrowser
 from flask import Flask, render_template, request, jsonify
 from name_analysis import analyze_name
 from ziwei_calc import generate_ziwei_chart, calculate_liunian
+from bazi_calc import calculate_bazi
 
 app = Flask(__name__)
 
@@ -47,10 +48,16 @@ def analyze():
     except Exception as e:
         liunian_result = {'error': str(e)}
 
+    try:
+        bazi_result = calculate_bazi(birth_year, birth_month, birth_day, birth_hour, gender)
+    except Exception as e:
+        bazi_result = {'error': str(e)}
+
     return jsonify({
         'name_analysis': name_result,
         'ziwei_chart':   chart_result,
         'liunian':       liunian_result,
+        'bazi':          bazi_result,
     })
 
 @app.route('/liunian', methods=['POST'])

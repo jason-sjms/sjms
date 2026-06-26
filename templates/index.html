@@ -180,6 +180,44 @@ body {
 .aspect-card .ac-stars   { margin-top: 0.5rem; display: flex; flex-wrap: wrap; gap: 4px; }
 .liunian-hint { text-align: center; color: #6a6050; font-size: 0.88rem; padding: 2.5rem 1rem; }
 
+/* 八字命盤 */
+.bz-pillars { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 1.2rem; }
+.bz-pillar {
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,215,0,0.2);
+  border-radius: 10px; padding: 0.9rem 0.6rem; text-align: center;
+}
+.bz-pillar-name { font-size: 0.78rem; color: #b8a88a; margin-bottom: 0.5rem; }
+.bz-gz { font-size: 1.6rem; font-weight: bold; color: #ffd700; letter-spacing: 0.15em; }
+.bz-wx-row { display: flex; justify-content: center; gap: 6px; margin-top: 4px; font-size: 0.8rem; }
+.bz-nayin { font-size: 0.75rem; color: #b8a88a; margin-top: 6px; }
+.bz-hidden { font-size: 0.72rem; color: #8a8070; margin-top: 3px; }
+.bz-ss { font-size: 0.78rem; margin-top: 5px; padding: 2px 6px; border-radius: 4px; display: inline-block; }
+
+.bz-wx-chart { display: flex; gap: 8px; align-items: flex-end; margin-bottom: 1.2rem; padding: 1rem; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,215,0,0.15); border-radius: 10px; }
+.bz-wx-bar-wrap { flex: 1; text-align: center; }
+.bz-wx-label { font-size: 0.85rem; margin-bottom: 4px; font-weight: bold; }
+.bz-wx-bar-outer { height: 80px; background: rgba(255,255,255,0.06); border-radius: 4px; display: flex; align-items: flex-end; overflow: hidden; }
+.bz-wx-bar-fill { width: 100%; border-radius: 4px; transition: height 0.8s; }
+.bz-wx-score { font-size: 0.78rem; color: #b8a88a; margin-top: 4px; }
+
+.bz-strength { display: flex; align-items: center; gap: 1rem; padding: 0.9rem 1.2rem; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,215,0,0.15); border-radius: 10px; margin-bottom: 1.2rem; flex-wrap: wrap; }
+.bz-strength-label { font-size: 1.4rem; font-weight: bold; }
+.bz-yong { flex: 1; min-width: 200px; }
+.bz-yong-title { font-size: 0.82rem; color: #b8a88a; margin-bottom: 4px; }
+.bz-yong-exp { font-size: 0.88rem; color: #c0b8a8; line-height: 1.6; }
+.bz-tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.82rem; font-weight: bold; margin: 2px; }
+
+.bz-dayun-title { color: #ffd700; font-size: 0.95rem; letter-spacing: 0.1em; margin-bottom: 0.8rem; }
+.bz-dayun-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px,1fr)); gap: 8px; }
+.bz-dy-cell {
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,215,0,0.12);
+  border-radius: 8px; padding: 0.7rem 0.5rem; text-align: center;
+}
+.bz-dy-cell.current { border-color: #ffd700; background: rgba(255,215,0,0.07); }
+.bz-dy-gz { font-size: 1.2rem; font-weight: bold; color: #ffd700; }
+.bz-dy-age { font-size: 0.76rem; color: #b8a88a; margin-top: 3px; }
+.bz-dy-ss { font-size: 0.72rem; margin-top: 4px; padding: 1px 5px; border-radius: 3px; display: inline-block; }
+
 /* 犯太歲警示 */
 .taisui-box {
   border-radius: 10px; padding: 1rem 1.3rem; margin-bottom: 1.2rem;
@@ -201,7 +239,7 @@ body {
 
 <div class="header">
   <h1>神機妙算</h1>
-  <p>姓名五行分析 · 紫微命盤 · 流年運勢</p>
+  <p>姓名五行分析 · 紫微命盤 · 流年運勢 · 八字論命</p>
 </div>
 
 <div class="container">
@@ -270,22 +308,21 @@ body {
       <button class="tab-btn active" onclick="switchTab('name')">姓名五行</button>
       <button class="tab-btn" onclick="switchTab('chart')">紫微命盤</button>
       <button class="tab-btn" onclick="switchTab('fortune')">流年運勢</button>
+      <button class="tab-btn" onclick="switchTab('bazi')">八字論命</button>
     </div>
 
     <div id="tab-name" class="tab-content active"></div>
     <div id="tab-chart" class="tab-content"></div>
     <div id="tab-fortune" class="tab-content"></div>
+    <div id="tab-bazi" class="tab-content"></div>
   </div>
 </div>
 
 <script>
 function switchTab(t) {
-  document.querySelectorAll('.tab-btn').forEach((b,i)=>{
-    b.classList.toggle('active', ['name','chart','fortune'][i]===t);
-  });
-  document.querySelectorAll('.tab-content').forEach((c,i)=>{
-    c.classList.toggle('active', ['tab-name','tab-chart','tab-fortune'][i]==='tab-'+t);
-  });
+  const keys = ['name','chart','fortune','bazi'];
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>{ b.classList.toggle('active', keys[i]===t); });
+  document.querySelectorAll('.tab-content').forEach((c,i)=>{ c.classList.toggle('active', 'tab-'+keys[i]==='tab-'+t); });
 }
 
 async function doAnalyze() {
@@ -336,6 +373,7 @@ function renderResults(data) {
   renderName(data.name_analysis);
   renderChart(data.ziwei_chart);
   renderFortuneTab(data.liunian);
+  renderBazi(data.bazi);
 }
 
 // ── 姓名分析 ──────────────────────────────────────
@@ -612,6 +650,153 @@ function renderLiunianResult(d) {
     `<div class="liunian-result-header">${metaHtml}</div>` +
     taisuiHtml + overallHtml + aspectsHtml;
 }
+
+// ── 八字論命 ──────────────────────────────────────
+const WX_COL = {木:'#2ecc71',火:'#e74c3c',土:'#f39c12',金:'#f1c40f',水:'#3498db'};
+const WX_BG2 = {木:'rgba(46,204,113,0.15)',火:'rgba(231,76,60,0.15)',土:'rgba(243,156,18,0.15)',金:'rgba(241,196,15,0.15)',水:'rgba(52,152,219,0.15)'};
+const SS_COLOR = {
+  '比肩':'#ffd700','劫財':'#ffa500',
+  '食神':'#2ecc71','傷官':'#1abc9c',
+  '正財':'#3498db','偏財':'#5dade2',
+  '正官':'#9b59b6','七殺':'#e74c3c',
+  '正印':'#e91e8c','偏印':'#f39c12',
+};
+const PILLAR_NAMES = {year:'年柱', month:'月柱', day:'日柱', hour:'時柱'};
+
+function renderBazi(d) {
+  const el = document.getElementById('tab-bazi');
+  if (!d || d.error) { el.innerHTML = `<div class="error-msg">❌ ${d ? d.error : '八字計算失敗'}</div>`; return; }
+
+  const warnHtml = d.near_jie_warning
+    ? `<div class="warn-msg">⚠ 出生日期接近節氣分界，月柱可能存在誤差，建議對照萬年曆確認。</div>` : '';
+
+  // 四柱
+  let pillarsHtml = '<div class="bz-pillars">';
+  for (const pos of ['year','month','day','hour']) {
+    const p = d.pillars[pos];
+    const isDay = (pos === 'day');
+    const ssHtml = isDay
+      ? `<div class="bz-ss" style="background:rgba(255,215,0,0.12);color:#ffd700">日主</div>`
+      : `<div class="bz-ss" style="background:${WX_BG2[WX_COL[p.stem_wx]]||'rgba(255,215,0,0.1)'};color:${SS_COLOR[p.shi_shen]||'#ffd700'}">${p.shi_shen}</div>`;
+    const hiddenHtml = p.hidden.length
+      ? `<div class="bz-hidden">藏：${p.hidden.map(h=>`<span style="color:${WX_COL[GAN_WX_MAP[h]]||'#b8a88a'}">${h}</span>`).join(' ')}</div>` : '';
+    pillarsHtml += `
+      <div class="bz-pillar">
+        <div class="bz-pillar-name">${PILLAR_NAMES[pos]}</div>
+        <div class="bz-gz">${p.ganzhi}</div>
+        <div class="bz-wx-row">
+          <span style="color:${WX_COL[p.stem_wx]}">${p.stem_wx}</span>
+          <span style="color:#6a6050">/</span>
+          <span style="color:${WX_COL[p.branch_wx]}">${p.branch_wx}</span>
+        </div>
+        ${ssHtml}
+        <div class="bz-nayin">${p.nayin}（<span style="color:${WX_COL[p.nayin_wx]}">${p.nayin_wx}</span>）</div>
+        ${hiddenHtml}
+      </div>`;
+  }
+  pillarsHtml += '</div>';
+
+  // 日主資訊
+  const dm = d.day_master;
+  const dmColor = WX_COL[dm.element] || '#ffd700';
+
+  // 五行統計長條圖
+  const wxMax = Math.max(...Object.values(d.wx_scores), 1);
+  let wxHtml = '<div class="bz-wx-chart">';
+  for (const [wx, score] of Object.entries(d.wx_scores)) {
+    const pct = Math.round((score / wxMax) * 100);
+    wxHtml += `
+      <div class="bz-wx-bar-wrap">
+        <div class="bz-wx-label" style="color:${WX_COL[wx]}">${wx}</div>
+        <div class="bz-wx-bar-outer">
+          <div class="bz-wx-bar-fill" style="height:${pct}%;background:${WX_COL[wx]}"></div>
+        </div>
+        <div class="bz-wx-score">${score}</div>
+      </div>`;
+  }
+  wxHtml += '</div>';
+
+  // 日主強弱 + 喜用神
+  const str = d.strength;
+  const strColor = str.score >= 65 ? '#e74c3c' : str.score <= 42 ? '#3498db' : '#f39c12';
+  const ys = d.yong_shen;
+  const xiHtml  = ys.xi.map(wx=>`<span class="bz-tag" style="background:${WX_BG2[wx]};color:${WX_COL[wx]}">${wx} 喜</span>`).join('');
+  const jiHtml  = ys.ji.map(wx=>`<span class="bz-tag" style="background:rgba(100,100,100,0.1);color:#888">${wx} 忌</span>`).join('');
+  const strengthHtml = `
+    <div class="bz-strength">
+      <div>
+        <div style="font-size:0.78rem;color:#b8a88a;margin-bottom:2px">日主</div>
+        <span class="bz-strength-label" style="color:${dmColor}">${dm.stem}（${dm.element}）</span>
+        <span style="font-size:0.82rem;color:#b8a88a">${dm.yang?'陽':'陰'}${dm.element}</span>
+      </div>
+      <div>
+        <div style="font-size:0.78rem;color:#b8a88a;margin-bottom:2px">強弱</div>
+        <span class="bz-strength-label" style="color:${strColor}">${str.label}</span>
+        <span style="font-size:0.82rem;color:#b8a88a">（${str.score}分）</span>
+      </div>
+      <div class="bz-yong">
+        <div class="bz-yong-title">喜用神 / 忌神</div>
+        <div style="margin-bottom:6px">${xiHtml}${jiHtml}</div>
+        <div class="bz-yong-exp">${ys.explanation}</div>
+      </div>
+    </div>`;
+
+  // 大運
+  const dyInfo = d.dayun_start;
+  const currentAge = new Date().getFullYear() - parseInt(document.getElementById('inp-year').value);
+  let dyHtml = `<div class="bz-dayun-title">▶ 大運排列（${dyInfo.forward ? '順行' : '逆行'}，${dyInfo.year}歲${dyInfo.month>0?dyInfo.month+'個月':''}起運）</div>`;
+  dyHtml += '<div class="bz-dayun-grid">';
+  for (const dy of d.dayun) {
+    const isCurr = d.current_dayun && dy.ganzhi === d.current_dayun.ganzhi;
+    const ssC = SS_COLOR[dy.shi_shen] || '#ffd700';
+    dyHtml += `
+      <div class="bz-dy-cell${isCurr?' current':''}">
+        <div class="bz-dy-gz">${dy.ganzhi}</div>
+        <div style="font-size:0.74rem;color:#b8a88a;margin-top:2px">
+          <span style="color:${WX_COL[dy.stem_wx]}">${dy.stem_wx}</span>/<span style="color:${WX_COL[dy.branch_wx]}">${dy.branch_wx}</span>
+        </div>
+        <div class="bz-dy-ss" style="background:${WX_BG2[WX_COL[dy.stem_wx]]||'rgba(255,215,0,0.1)'};color:${ssC}">${dy.shi_shen}</div>
+        <div class="bz-dy-age">${dy.age_start}～${dy.age_end}歲</div>
+        ${isCurr ? '<div style="font-size:0.7rem;color:#ffd700;margin-top:3px">▶ 目前</div>' : ''}
+      </div>`;
+  }
+  dyHtml += '</div>';
+
+  // 入口說明
+  const introHtml = `
+    <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,215,0,0.15);border-radius:10px;padding:1rem 1.2rem;margin-bottom:1.2rem;font-size:0.88rem;color:#b8a88a;line-height:1.7">
+      <span style="color:#ffd700">▶ 八字簡介</span>
+      八字（四柱命理）以出生年、月、日、時各一柱共八個字推算命格。
+      日主（日柱天干）代表本人，透過五行強弱與喜用神判斷最適合的發展方向與化解之道。
+      節氣界定月份，立春前後為年柱分界，請注意「月柱」的節氣確認。
+    </div>`;
+
+  // 命格解說
+  const SUMMARY_COLOR = {
+    '日主性格':'#ffd700','月柱環境':'#2ecc71','年柱祖蔭':'#b8a88a',
+    '時柱晚運':'#9b59b6','命格方向':'#f39c12','適合行業':'#3498db',
+  };
+  let summaryHtml = '';
+  if (d.summary && d.summary.length) {
+    summaryHtml = `
+      <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,215,0,0.15);border-radius:10px;padding:1.2rem;margin-top:1.2rem">
+        <div style="color:#ffd700;font-size:0.95rem;letter-spacing:0.1em;margin-bottom:1rem">▶ 命格總體解說</div>
+        <div style="display:flex;flex-direction:column;gap:0.8rem">
+          ${d.summary.map(([label, text]) => {
+            const c = SUMMARY_COLOR[label] || '#ffd700';
+            return `<div style="display:flex;gap:0.8rem;align-items:flex-start">
+              <span style="min-width:4.5em;color:${c};font-weight:bold;font-size:0.9rem;padding-top:0.1rem;flex-shrink:0">【${label}】</span>
+              <span style="color:#c0b8a8;font-size:0.92rem;line-height:1.75">${text}</span>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+  }
+
+  el.innerHTML = warnHtml + introHtml + pillarsHtml + wxHtml + strengthHtml + summaryHtml + dyHtml;
+}
+
+const GAN_WX_MAP = {甲:'木',乙:'木',丙:'火',丁:'火',戊:'土',己:'土',庚:'金',辛:'金',壬:'水',癸:'水'};
 </script>
 </body>
 </html>
