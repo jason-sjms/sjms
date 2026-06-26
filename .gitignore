@@ -3,7 +3,7 @@ __pycache__/
 *.pyo
 *.pyd
 .env
-sjms_deploy.zip
+*.zip
 error.jpg
 run.bat
 提示詞.txt
