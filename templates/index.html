@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>神機妙算 — 姓名五行與紫微命盤流年</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: '微軟正黑體', '蘋方', sans-serif;
+  background: linear-gradient(135deg, #1a0a2e 0%, #16213e 50%, #0f3460 100%);
+  min-height: 100vh; color: #e0d5c5; font-size: 15px;
+}
+.header {
+  text-align: center; padding: 2rem 1rem 1rem;
+  background: rgba(255,215,0,0.05);
+  border-bottom: 1px solid rgba(255,215,0,0.2);
+}
+.header h1 { font-size: 2.5rem; color: #ffd700; letter-spacing: 0.2em; text-shadow: 0 0 20px rgba(255,215,0,0.5); }
+.header p  { color: #b8a88a; margin-top: 0.4rem; letter-spacing: 0.1em; }
+
+.container { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
+
+/* 輸入表單 */
+.form-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,215,0,0.2);
+  border-radius: 12px; padding: 1.8rem;
+  backdrop-filter: blur(10px); margin-bottom: 1.5rem;
+}
+.form-card h2 { color: #ffd700; margin-bottom: 1.2rem; font-size: 1.1rem; letter-spacing: 0.1em; }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; }
+.field label { display: block; font-size: 0.82rem; color: #b8a88a; margin-bottom: 0.3rem; }
+.field input, .field select {
+  width: 100%; padding: 0.55rem 0.8rem;
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,215,0,0.3);
+  border-radius: 6px; color: #e0d5c5; font-size: 0.95rem;
+}
+.field input:focus, .field select:focus {
+  outline: none; border-color: #ffd700; background: rgba(255,215,0,0.05);
+}
+.btn-analyze {
+  margin-top: 1.2rem; width: 100%; padding: 0.8rem;
+  background: linear-gradient(135deg, #8b0000, #c0392b);
+  border: none; border-radius: 8px; color: #ffd700;
+  font-size: 1.1rem; letter-spacing: 0.2em; cursor: pointer;
+  transition: all 0.3s; font-weight: bold;
+}
+.btn-analyze:hover { background: linear-gradient(135deg, #a00000, #e74c3c); transform: translateY(-1px); }
+.btn-analyze:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* 結果區 */
+#results { display: none; }
+
+/* 分頁 */
+.tabs { display: flex; gap: 0; margin-bottom: 1.5rem; border-bottom: 2px solid rgba(255,215,0,0.2); }
+.tab-btn {
+  padding: 0.7rem 1.4rem; background: transparent;
+  border: none; border-bottom: 2px solid transparent;
+  color: #b8a88a; cursor: pointer; font-size: 0.95rem;
+  margin-bottom: -2px; transition: all 0.2s; letter-spacing: 0.05em;
+}
+.tab-btn.active { color: #ffd700; border-bottom-color: #ffd700; }
+.tab-btn:hover { color: #ffd700; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* 姓名分析 */
+.name-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+@media(max-width:600px){ .name-grid { grid-template-columns: 1fr; } }
+.card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,215,0,0.15);
+  border-radius: 10px; padding: 1.2rem;
+}
+.card h3 { color: #ffd700; margin-bottom: 0.8rem; font-size: 0.95rem; letter-spacing: 0.1em; }
+.five-grid-table { width: 100%; border-collapse: collapse; }
+.five-grid-table th { background: rgba(255,215,0,0.1); color: #ffd700; padding: 0.4rem 0.6rem; font-size: 0.88rem; }
+.five-grid-table td { padding: 0.4rem 0.6rem; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.94rem; text-align: center; }
+.badge { display: inline-block; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.84rem; font-weight: bold; }
+.score-bar { height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; margin-top: 0.3rem; }
+.score-fill { height: 100%; border-radius: 4px; transition: width 0.8s; }
+.char-row { display: flex; gap: 0.8rem; flex-wrap: wrap; margin: 0.4rem 0; }
+.char-item { text-align: center; }
+.char-big { font-size: 1.8rem; color: #ffd700; }
+.char-small { font-size: 0.82rem; color: #b8a88a; }
+
+/* 命盤 */
+.chart-container { display: grid; grid-template-columns: repeat(4,1fr); gap: 2px; margin-bottom: 1.5rem; }
+.palace-cell {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,215,0,0.15);
+  padding: 0.55rem; min-height: 105px; position: relative;
+  border-radius: 4px;
+}
+.palace-cell.ming  { background: rgba(255,0,0,0.08); border-color: rgba(255,100,100,0.4); }
+.palace-cell.shen  { background: rgba(0,100,255,0.08); border-color: rgba(100,150,255,0.4); }
+.palace-cell.center { background: rgba(255,215,0,0.03); border-color: rgba(255,215,0,0.1); display:flex; align-items:center; justify-content:center; text-align:center; }
+.palace-name { font-size: 0.78rem; color: #b8a88a; }
+.palace-branch { font-size: 0.93rem; color: #ffd700; font-weight: bold; }
+.palace-tags { display: flex; flex-wrap: wrap; gap: 2px; margin-top: 3px; }
+.star-tag {
+  font-size: 0.73rem; padding: 1px 5px;
+  border-radius: 3px; background: rgba(255,215,0,0.12);
+  color: #ffd700; border: 1px solid rgba(255,215,0,0.2);
+}
+.star-tag.minor { background: rgba(100,200,100,0.1); color: #90ee90; border-color: rgba(100,200,100,0.2); }
+.marker { font-size: 0.73rem; font-weight: bold; margin-top: 2px; }
+.marker.ming  { color: #ff6b6b; }
+.marker.shen  { color: #6b9cff; }
+.info-banner {
+  background: rgba(255,215,0,0.06); border: 1px solid rgba(255,215,0,0.2);
+  border-radius: 8px; padding: 0.8rem 1.2rem; margin-bottom: 1rem;
+  display: flex; flex-wrap: wrap; gap: 1rem; font-size: 0.94rem;
+}
+.info-item span:first-child { color: #b8a88a; }
+.info-item span:last-child  { color: #ffd700; margin-left: 0.3rem; }
+
+/* 運勢 */
+.year-section { margin-bottom: 1.5rem; }
+.year-header {
+  background: rgba(255,215,0,0.08); border: 1px solid rgba(255,215,0,0.2);
+  border-radius: 8px 8px 0 0; padding: 0.6rem 1rem;
+  display: flex; align-items: center; gap: 1rem;
+}
+.year-label { font-size: 1.1rem; color: #ffd700; font-weight: bold; }
+.year-sub { font-size: 0.8rem; color: #b8a88a; }
+.aspects-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(200px,1fr)); gap: 0; }
+.aspect-item {
+  padding: 0.8rem 1rem;
+  border: 1px solid rgba(255,215,0,0.1);
+  background: rgba(255,255,255,0.02);
+}
+.aspect-name { font-size: 0.78rem; color: #b8a88a; margin-bottom: 0.3rem; }
+.aspect-score-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; }
+.aspect-score { font-size: 1.2rem; font-weight: bold; }
+.aspect-text { font-size: 0.78rem; color: #c0b8a8; line-height: 1.5; }
+
+.loading { text-align: center; padding: 3rem; color: #b8a88a; }
+.spinner { width: 40px; height: 40px; border: 3px solid rgba(255,215,0,0.2); border-top-color: #ffd700; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 1rem; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.error-msg { background: rgba(231,76,60,0.1); border: 1px solid rgba(231,76,60,0.3); border-radius: 8px; padding: 1rem; color: #e74c3c; }
+.warn-msg { background: rgba(255,165,0,0.08); border: 1px solid rgba(255,165,0,0.2); border-radius: 6px; padding: 0.6rem 1rem; color: #ffa500; font-size: 0.82rem; margin-bottom: 1rem; }
+
+
+/* 流年結果 */
+.liunian-result-header {
+  background: rgba(255,215,0,0.08); border: 1px solid rgba(255,215,0,0.25);
+  border-radius: 10px; padding: 1rem 1.4rem; margin-bottom: 1.2rem;
+}
+.liunian-result-header .yr-title {
+  font-size: 1.5rem; color: #ffd700; font-weight: bold; letter-spacing: 0.1em; margin-bottom: 0.4rem;
+}
+.liunian-result-header .yr-meta {
+  display: flex; flex-wrap: wrap; gap: 0.8rem 1.5rem; font-size: 0.92rem; color: #b8a88a;
+}
+.liunian-result-header .yr-meta span { color: #ffd700; }
+.overall-box {
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,215,0,0.15);
+  border-radius: 8px; padding: 1rem 1.2rem; margin-bottom: 1.4rem;
+  font-size: 0.93rem; color: #c0b8a8; line-height: 1.8;
+}
+.overall-box .ov-score {
+  display: inline-block; font-size: 2rem; font-weight: bold; margin-right: 0.5rem; vertical-align: middle;
+}
+.aspect-card {
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,215,0,0.12);
+  border-radius: 10px; padding: 1.1rem 1.3rem; margin-bottom: 1rem;
+}
+.aspect-card .ac-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.6rem; }
+.aspect-card .ac-name { font-size: 1rem; color: #ffd700; font-weight: bold; }
+.aspect-card .ac-score { font-size: 1.6rem; font-weight: bold; }
+.aspect-card .ac-level {
+  font-size: 0.8rem; padding: 0.2rem 0.6rem; border-radius: 4px; font-weight: bold;
+}
+.aspect-card .ac-bar-wrap { flex: 1; }
+.aspect-card .ac-summary { font-size: 0.91rem; color: #c0b8a8; line-height: 1.7; margin-bottom: 0.5rem; }
+.aspect-card .ac-detail  { font-size: 0.89rem; color: #a8a098; line-height: 1.7; border-top: 1px solid rgba(255,215,0,0.08); padding-top: 0.5rem; }
+.aspect-card .ac-stars   { margin-top: 0.5rem; display: flex; flex-wrap: wrap; gap: 4px; }
+.liunian-hint { text-align: center; color: #6a6050; font-size: 0.88rem; padding: 2.5rem 1rem; }
+
+/* 八字命盤 */
+.bz-pillars { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 1.2rem; }
+.bz-pillar {
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,215,0,0.2);
+  border-radius: 10px; padding: 0.9rem 0.6rem; text-align: center;
+}
+.bz-pillar-name { font-size: 0.78rem; color: #b8a88a; margin-bottom: 0.5rem; }
+.bz-gz { font-size: 1.6rem; font-weight: bold; color: #ffd700; letter-spacing: 0.15em; }
+.bz-wx-row { display: flex; justify-content: center; gap: 6px; margin-top: 4px; font-size: 0.8rem; }
+.bz-nayin { font-size: 0.75rem; color: #b8a88a; margin-top: 6px; }
+.bz-hidden { font-size: 0.72rem; color: #8a8070; margin-top: 3px; }
+.bz-ss { font-size: 0.78rem; margin-top: 5px; padding: 2px 6px; border-radius: 4px; display: inline-block; }
+
+.bz-wx-chart { display: flex; gap: 8px; align-items: flex-end; margin-bottom: 1.2rem; padding: 1rem; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,215,0,0.15); border-radius: 10px; }
+.bz-wx-bar-wrap { flex: 1; text-align: center; }
+.bz-wx-label { font-size: 0.85rem; margin-bottom: 4px; font-weight: bold; }
+.bz-wx-bar-outer { height: 80px; background: rgba(255,255,255,0.06); border-radius: 4px; display: flex; align-items: flex-end; overflow: hidden; }
+.bz-wx-bar-fill { width: 100%; border-radius: 4px; transition: height 0.8s; }
+.bz-wx-score { font-size: 0.78rem; color: #b8a88a; margin-top: 4px; }
+
+.bz-strength { display: flex; align-items: center; gap: 1rem; padding: 0.9rem 1.2rem; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,215,0,0.15); border-radius: 10px; margin-bottom: 1.2rem; flex-wrap: wrap; }
+.bz-strength-label { font-size: 1.4rem; font-weight: bold; }
+.bz-yong { flex: 1; min-width: 200px; }
+.bz-yong-title { font-size: 0.82rem; color: #b8a88a; margin-bottom: 4px; }
+.bz-yong-exp { font-size: 0.88rem; color: #c0b8a8; line-height: 1.6; }
+.bz-tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.82rem; font-weight: bold; margin: 2px; }
+
+.bz-dayun-title { color: #ffd700; font-size: 0.95rem; letter-spacing: 0.1em; margin-bottom: 0.8rem; }
+.bz-dayun-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px,1fr)); gap: 8px; }
+.bz-dy-cell {
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,215,0,0.12);
+  border-radius: 8px; padding: 0.7rem 0.5rem; text-align: center;
+}
+.bz-dy-cell.current { border-color: #ffd700; background: rgba(255,215,0,0.07); }
+.bz-dy-gz { font-size: 1.2rem; font-weight: bold; color: #ffd700; }
+.bz-dy-age { font-size: 0.76rem; color: #b8a88a; margin-top: 3px; }
+.bz-dy-ss { font-size: 0.72rem; margin-top: 4px; padding: 1px 5px; border-radius: 3px; display: inline-block; }
+
+/* 犯太歲警示 */
+.taisui-box {
+  border-radius: 10px; padding: 1rem 1.3rem; margin-bottom: 1.2rem;
+  display: flex; gap: 1rem; align-items: flex-start;
+}
+.taisui-box.high   { background: rgba(231,76,60,0.1);  border: 1px solid rgba(231,76,60,0.4); }
+.taisui-box.medium { background: rgba(243,156,18,0.1); border: 1px solid rgba(243,156,18,0.4); }
+.taisui-box.low    { background: rgba(52,152,219,0.1); border: 1px solid rgba(52,152,219,0.35); }
+.taisui-icon { font-size: 1.8rem; line-height: 1; flex-shrink: 0; }
+.taisui-type { font-size: 1rem; font-weight: bold; margin-bottom: 0.3rem; }
+.taisui-box.high   .taisui-type { color: #e74c3c; }
+.taisui-box.medium .taisui-type { color: #f39c12; }
+.taisui-box.low    .taisui-type { color: #3498db; }
+.taisui-msg    { font-size: 0.89rem; color: #c0b8a8; line-height: 1.7; margin-bottom: 0.4rem; }
+.taisui-remedy { font-size: 0.84rem; color: #a8a098; line-height: 1.6; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 0.4rem; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>神機妙算</h1>
+  <p>姓名五行分析 · 紫微命盤 · 流年運勢 · 八字論命</p>
+</div>
+
+<div class="container">
+  <!-- 輸入表單 -->
+  <div class="form-card">
+    <h2>▶ 輸入基本資料</h2>
+    <div class="form-grid">
+      <div class="field" style="grid-column: span 2;">
+        <label>姓名（中文）</label>
+        <input type="text" id="inp-name" placeholder="例：王小明" maxlength="10">
+      </div>
+      <div class="field">
+        <label>出生年（西元）</label>
+        <input type="number" id="inp-year" value="1990" min="1900" max="2020">
+      </div>
+      <div class="field">
+        <label>出生月</label>
+        <select id="inp-month">
+          <option value="1">1月</option><option value="2">2月</option>
+          <option value="3">3月</option><option value="4">4月</option>
+          <option value="5">5月</option><option value="6">6月</option>
+          <option value="7">7月</option><option value="8">8月</option>
+          <option value="9">9月</option><option value="10">10月</option>
+          <option value="11">11月</option><option value="12">12月</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>出生日</label>
+        <input type="number" id="inp-day" value="1" min="1" max="31">
+      </div>
+      <div class="field">
+        <label>出生時辰（24小時制）</label>
+        <select id="inp-hour">
+          <option value="0">0時（子時 23-1）</option>
+          <option value="1">1時（丑時 1-3）</option>
+          <option value="3">3時（寅時 3-5）</option>
+          <option value="5">5時（卯時 5-7）</option>
+          <option value="7">7時（辰時 7-9）</option>
+          <option value="9">9時（巳時 9-11）</option>
+          <option value="11">11時（午時 11-13）</option>
+          <option value="13">13時（未時 13-15）</option>
+          <option value="15">15時（申時 15-17）</option>
+          <option value="17">17時（酉時 17-19）</option>
+          <option value="19">19時（戌時 19-21）</option>
+          <option value="21">21時（亥時 21-23）</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>性別</label>
+        <select id="inp-gender">
+          <option value="男">男</option>
+          <option value="女">女</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>查詢流年（西元）</label>
+        <input type="number" id="inp-liunian-year" value="2026" min="1900" max="2100">
+      </div>
+    </div>
+    <button class="btn-analyze" id="btn-analyze" onclick="doAnalyze()">開始分析命盤</button>
+  </div>
+
+  <!-- 結果 -->
+  <div id="results">
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('name')">姓名五行</button>
+      <button class="tab-btn" onclick="switchTab('chart')">紫微命盤</button>
+      <button class="tab-btn" onclick="switchTab('fortune')">流年運勢</button>
+      <button class="tab-btn" onclick="switchTab('bazi')">八字論命</button>
+    </div>
+
+    <div id="tab-name" class="tab-content active"></div>
+    <div id="tab-chart" class="tab-content"></div>
+    <div id="tab-fortune" class="tab-content"></div>
+    <div id="tab-bazi" class="tab-content"></div>
+  </div>
+</div>
+
+<script>
+function switchTab(t) {
+  const keys = ['name','chart','fortune','bazi'];
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>{ b.classList.toggle('active', keys[i]===t); });
+  document.querySelectorAll('.tab-content').forEach((c,i)=>{ c.classList.toggle('active', 'tab-'+keys[i]==='tab-'+t); });
+}
+
+async function doAnalyze() {
+  const btn = document.getElementById('btn-analyze');
+  btn.disabled = true; btn.textContent = '分析中…';
+  document.getElementById('results').style.display = 'none';
+
+  currentBirthData = {
+    name        : document.getElementById('inp-name').value,
+    year        : document.getElementById('inp-year').value,
+    month       : document.getElementById('inp-month').value,
+    day         : document.getElementById('inp-day').value,
+    hour        : document.getElementById('inp-hour').value,
+    gender      : document.getElementById('inp-gender').value,
+    liunian_year: document.getElementById('inp-liunian-year').value,
+  };
+  const payload = currentBirthData;
+
+  try {
+    const resp = await fetch('/analyze', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const data = await resp.json();
+    if (!resp.ok) { showError(data.error || '分析失敗'); return; }
+    renderResults(data);
+    document.getElementById('results').style.display = 'block';
+    switchTab('name');
+  } catch(e) {
+    showError('連線錯誤：' + e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = '開始分析命盤';
+  }
+}
+
+function showError(msg) {
+  document.getElementById('results').style.display = 'block';
+  document.getElementById('tab-name').innerHTML =
+    `<div class="error-msg">❌ ${msg}</div>`;
+}
+
+const WX_COLOR = {木:'#2ecc71',火:'#e74c3c',土:'#f39c12',金:'#f1c40f',水:'#3498db'};
+const WX_BG    = {木:'rgba(46,204,113,0.1)',火:'rgba(231,76,60,0.1)',土:'rgba(243,156,18,0.1)',金:'rgba(241,196,15,0.1)',水:'rgba(52,152,219,0.1)'};
+
+let currentBirthData = null;
+
+function renderResults(data) {
+  renderName(data.name_analysis);
+  renderChart(data.ziwei_chart);
+  renderFortuneTab(data.liunian);
+  renderBazi(data.bazi);
+}
+
+// ── 姓名分析 ──────────────────────────────────────
+function renderName(n) {
+  if (n.error) { document.getElementById('tab-name').innerHTML=`<div class="error-msg">${n.error}</div>`; return; }
+  const warnHtml = n.unknown_chars && n.unknown_chars.length
+    ? `<div class="warn-msg">⚠ 以下字的筆畫資料未收錄，以0計算（可能影響準確度）：${n.unknown_chars.join('、')}</div>` : '';
+
+  const charHtml = n.char_strokes.map(([c,s])=>`
+    <div class="char-item">
+      <div class="char-big">${c}</div>
+      <div class="char-small">${s}畫</div>
+      <div class="char-small" style="color:${WX_COLOR[wxOfStroke(s)]}">${wxOfStroke(s)}</div>
+    </div>`).join('');
+
+  const gridRows = Object.entries(n.grids).map(([k,v])=>{
+    const wx = n.grid_wuxing[k];
+    const sc = n.grid_scores[k];
+    return `<tr>
+      <td>${k}</td><td>${v}</td>
+      <td><span style="color:${WX_COLOR[wx]}">${wx}</span></td>
+      <td><span class="badge" style="background:${WX_BG[wx]};color:${WX_COLOR[wx]}">${sc.label}</span></td>
+    </tr>`;
+  }).join('');
+
+  const totalColor = n.total_score>=75?'#27ae60':n.total_score>=55?'#f39c12':'#e74c3c';
+  const sc3 = n.san_cai;
+
+  document.getElementById('tab-name').innerHTML = `
+    ${warnHtml}
+    <div class="name-grid">
+      <div class="card" style="grid-column:span 2">
+        <h3>字形筆畫 <span style="font-size:0.72rem;font-weight:normal;background:rgba(255,215,0,0.15);color:#ffd700;border:1px solid rgba(255,215,0,0.35);border-radius:4px;padding:2px 7px;vertical-align:middle;letter-spacing:0.05em">依康熙字典</span></h3>
+        <div class="char-row">${charHtml}</div>
+      </div>
+      <div class="card">
+        <h3>五格剖象</h3>
+        <table class="five-grid-table">
+          <tr><th>格局</th><th>數理</th><th>五行</th><th>吉凶</th></tr>
+          ${gridRows}
+        </table>
+      </div>
+      <div class="card">
+        <h3>三才五行</h3>
+        <div style="margin-bottom:0.8rem;font-size:0.94rem;color:#b8a88a">
+          天格(<span style="color:${WX_COLOR[sc3[0]]}">${sc3[0]}</span>) →
+          人格(<span style="color:${WX_COLOR[sc3[1]]}">${sc3[1]}</span>) →
+          地格(<span style="color:${WX_COLOR[sc3[2]]}">${sc3[2]}</span>)
+        </div>
+        <div style="font-size:0.92rem;color:#c0b8a8;line-height:1.7">${n.san_cai_desc}</div>
+        <br>
+        <div style="font-size:0.88rem;color:#b8a88a">主五行：<span style="color:${WX_COLOR[n.main_wuxing]};font-size:1.05rem;font-weight:bold">${n.main_wuxing}</span></div>
+      </div>
+      <div class="card" style="grid-column:span 2">
+        <h3>整體命名評分</h3>
+        <div style="display:flex;align-items:center;gap:1rem;margin-bottom:0.5rem">
+          <span style="font-size:2.5rem;font-weight:bold;color:${totalColor}">${n.total_score}</span>
+          <span style="color:#b8a88a">/ 100</span>
+          <span style="font-size:0.9rem;color:${totalColor}">${n.total_score>=75?'名字吉祥，五行有助運勢':n.total_score>=55?'名字平穩，尚可接受':'名字較弱，建議考慮更名'}</span>
+        </div>
+        <div class="score-bar"><div class="score-fill" style="width:${n.total_score}%;background:${totalColor}"></div></div>
+      </div>
+    </div>
+    <div style="margin-top:1.2rem;background:rgba(255,255,255,0.03);border:1px solid rgba(255,215,0,0.15);border-radius:10px;padding:1.2rem">
+      <div style="color:#ffd700;font-size:0.95rem;letter-spacing:0.1em;margin-bottom:1rem">▶ 姓名總體說明</div>
+      <div style="display:flex;flex-direction:column;gap:0.7rem">
+        ${(n.name_summary||[]).map(([label,text])=>{
+          const colors={'整體評分':'#ffd700','人格':'#ff6b6b','三才五行':'#2ecc71','天格':'#b8a88a','地格':'#b8a88a','總格':'#f39c12','五行建議':'#3498db'};
+          const c2=colors[label]||'#ffd700';
+          return `<div style="display:flex;gap:0.8rem;align-items:flex-start">
+            <span style="min-width:4em;color:${c2};font-weight:bold;font-size:0.92rem;padding-top:0.1rem">【${label}】</span>
+            <span style="color:#c0b8a8;font-size:0.94rem;line-height:1.7">${text}</span>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+}
+
+function wxOfStroke(s){ const d=s%10; return d<=2?'木':d<=4?'火':d<=6?'土':d<=8?'金':'水'; }
+
+// ── 命盤 ──────────────────────────────────────────
+function renderChart(c) {
+  if (c.error) { document.getElementById('tab-chart').innerHTML=`<div class="error-msg">${c.error}</div>`; return; }
+
+  const warnHtml = !c.has_lunardate
+    ? `<div class="warn-msg">⚠ lunardate 套件未安裝，農曆轉換使用估算值，安裝後精確度大幅提升：<code>pip install lunardate</code></div>` : '';
+
+  const MINOR = new Set(['左輔','右弼','文昌','文曲','天魁','天鉞']);
+  const palaces = c.palaces;
+
+  // 傳統12宮排列順序（左上角起，逆時針）
+  // 位置對應：外圈12宮 + 中心2格說明
+  // 配置: 行列索引對應命盤格子
+  // 標準紫微命盤版面（4x4，中心2x2為說明）
+  const layoutOrder = [6,7,8,9,10,11,0,1,2,3,4,5]; // 午未申酉戌亥子丑寅卯辰巳 → 對應格子順序
+  // 實際上我們直接用 palaces 陣列順序來渲染，按 branch_idx 排布
+
+  // 建立地支→宮位對應
+  const branchToPalace = {};
+  palaces.forEach(p => { branchToPalace[p.branch_idx] = p; });
+
+  // 12宮在4x4格的位置（順序：上排左→右，右排上→下，下排右→左，左排下→上）
+  const gridPositions = [
+    // 上排（row=0, col=0..3）: 宮branch 巳午未申
+    {r:0,c:0,b:5},{r:0,c:1,b:6},{r:0,c:2,b:7},{r:0,c:3,b:8},
+    // 右排（col=3, row=1..2）: 酉、戌（but we skip 4x4 center）
+    {r:1,c:3,b:9},{r:2,c:3,b:10},
+    // 下排右→左（row=3, col=3..0）: 亥、子、丑、寅
+    {r:3,c:3,b:11},{r:3,c:2,b:0},{r:3,c:1,b:1},{r:3,c:0,b:2},
+    // 左排下→上（col=0, row=2..1）: 卯、辰
+    {r:2,c:0,b:3},{r:1,c:0,b:4},
+  ];
+
+  let gridCells = Array.from({length:4},()=>Array(4).fill(''));
+
+  // 中心2x2
+  const lunarStr = `農曆${c.lunar.year}年${c.lunar.month}月${c.lunar.day}日${c.lunar.is_leap?'(閏)':''}`;
+  const centerInfo = `
+    <div style="font-size:0.83rem;color:#b8a88a;line-height:1.8">
+      <div style="color:#ffd700;font-size:1rem;margin-bottom:0.3rem">${c.input.gender}命</div>
+      <div>${c.ganzhi}</div>
+      <div>${lunarStr}</div>
+      <div>${c.input.hour_branch}時</div>
+      <div style="color:#ffd700">${c.ju_name}</div>
+      <div>命宮：<span style="color:#ff6b6b">${c.ming_branch}</span></div>
+      <div>身宮：<span style="color:#6b9cff">${c.shen_branch}</span></div>
+    </div>`;
+  gridCells[1][1] = `<div class="palace-cell center" style="grid-row:2/4;grid-column:2/4">${centerInfo}</div>`;
+
+  // 12宮
+  gridPositions.forEach(({r,c:col,b})=>{
+    const p = branchToPalace[b];
+    if (!p) return;
+    const mainStars = p.stars.filter(s=>!MINOR.has(s));
+    const minorStars = p.stars.filter(s=>MINOR.has(s));
+    const starHtml = [
+      ...mainStars.map(s=>`<span class="star-tag">${s}</span>`),
+      ...minorStars.map(s=>`<span class="star-tag minor">${s}</span>`),
+    ].join('');
+    const mingMark  = p.is_ming ? '<div class="marker ming">命</div>' : '';
+    const shenMark  = p.is_shen ? '<div class="marker shen">身</div>' : '';
+    const cellClass = p.is_ming ? 'palace-cell ming' : p.is_shen ? 'palace-cell shen' : 'palace-cell';
+    gridCells[r][col] = `
+      <div class="${cellClass}">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span class="palace-name">${p.name}</span>
+          <span class="palace-branch">${p.branch}</span>
+        </div>
+        ${mingMark}${shenMark}
+        <div class="palace-tags">${starHtml}</div>
+      </div>`;
+  });
+
+  // 建立 CSS grid
+  let gridHtml = '<div style="display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,auto);gap:3px">';
+  for (let r=0; r<4; r++) {
+    for (let col=0; col<4; col++) {
+      if (r>=1 && r<=2 && col>=1 && col<=2) {
+        if (r===1 && col===1) {
+          gridHtml += `<div class="palace-cell center" style="grid-row:2/4;grid-column:2/4">${centerInfo}</div>`;
+        }
+        // 跳過其他中心格
+        continue;
+      }
+      gridHtml += gridCells[r][col] || '<div class="palace-cell"></div>';
+    }
+  }
+  gridHtml += '</div>';
+
+  const dx = c.daxian;
+  const dxHtml = `
+    <div class="info-banner">
+      <div class="info-item"><span>出生日期</span><span>${c.input.birth}</span></div>
+      <div class="info-item"><span>農曆</span><span>${lunarStr}</span></div>
+      <div class="info-item"><span>年干支</span><span>${c.ganzhi}</span></div>
+      <div class="info-item"><span>命宮</span><span style="color:#ff6b6b">${c.ming_branch}</span></div>
+      <div class="info-item"><span>身宮</span><span style="color:#6b9cff">${c.shen_branch}</span></div>
+      <div class="info-item"><span>五行局</span><span>${c.ju_name}</span></div>
+      <div class="info-item"><span>紫微</span><span>${c.ziwei_branch}</span></div>
+      <div class="info-item"><span>天府</span><span>${c.tianfu_branch}</span></div>
+      <div class="info-item"><span>目前大限</span><span>${dx.palace_name}（${dx.start_age}-${dx.end_age}歲，${dx.palace}宮）</span></div>
+    </div>`;
+
+  // 命盤總體說明
+  const LABEL_COLOR = {
+    '命宮':'#ff6b6b', '財帛':'#f1c40f', '事業':'#2ecc71',
+    '感情':'#e91e8c', '福德':'#9b59b6', '大限':'#3498db', '整體':'#ffd700'
+  };
+  let summaryHtml = '<div style="margin-top:1.2rem;background:rgba(255,255,255,0.03);border:1px solid rgba(255,215,0,0.15);border-radius:10px;padding:1.2rem">';
+  summaryHtml += '<div style="color:#ffd700;font-size:0.95rem;letter-spacing:0.1em;margin-bottom:1rem">▶ 命盤總體說明</div>';
+  summaryHtml += '<div style="display:flex;flex-direction:column;gap:0.7rem">';
+  (c.chart_summary || []).forEach(([label, text]) => {
+    const color = LABEL_COLOR[label] || '#ffd700';
+    summaryHtml += `
+      <div style="display:flex;gap:0.8rem;align-items:flex-start">
+        <span style="min-width:3em;color:${color};font-weight:bold;font-size:0.92rem;padding-top:0.1rem">【${label}】</span>
+        <span style="color:#c0b8a8;font-size:0.94rem;line-height:1.7">${text}</span>
+      </div>`;
+  });
+  summaryHtml += '</div></div>';
+
+  document.getElementById('tab-chart').innerHTML = warnHtml + dxHtml + gridHtml + summaryHtml;
+}
+
+// ── 流年運勢 ──────────────────────────────────────
+function renderFortuneTab(d) {
+  if (!d || d.error) {
+    document.getElementById('tab-fortune').innerHTML =
+      `<div class="error-msg">❌ ${d ? d.error : '流年資料錯誤'}</div>`;
+    return;
+  }
+  document.getElementById('tab-fortune').innerHTML =
+    '<div id="liunian-result"></div>';
+  renderLiunianResult(d);
+}
+
+function renderLiunianResult(d) {
+  const ASPECT_ICON = {'財運':'💰','事業':'💼','感情家庭':'❤️','人際朋友':'🤝','健康':'💚'};
+  const ovColor = d.overall_score>=75?'#27ae60':d.overall_score>=60?'#f39c12':d.overall_score>=45?'#b8a88a':'#e74c3c';
+
+  const metaHtml = `
+    <div class="yr-title">${d.year}年　${d.ganzhi}</div>
+    <div class="yr-meta">
+      <div>年齡：<span>${d.age} 歲</span></div>
+      <div>流年命宮：<span>${d.liunian_ming}</span></div>
+      <div>大限宮：<span>${d.daxian_palace_name}（${d.daxian_start}～${d.daxian_end}歲）</span></div>
+    </div>`;
+
+  const overallHtml = `
+    <div class="overall-box">
+      <span class="ov-score" style="color:${ovColor}">${d.overall_score}</span>
+      <span style="color:#b8a88a;font-size:0.82rem">/ 100　整體流年評分</span><br>
+      <span style="color:#c0b8a8">${d.overall_text}</span>
+    </div>`;
+
+  const aspectsHtml = Object.entries(d.aspects).map(([asp, info]) => {
+    const color = info.score>=75?'#27ae60':info.score>=65?'#f39c12':info.score>=50?'#b8a88a':'#e74c3c';
+    const levelBg = info.score>=75?'rgba(39,174,96,0.15)':info.score>=65?'rgba(243,156,18,0.15)':info.score>=50?'rgba(184,168,138,0.1)':'rgba(231,76,60,0.15)';
+    const starHtml = info.stars.length
+      ? info.stars.map(s=>`<span class="star-tag">${s}</span>`).join('')
+      : '<span style="color:#6a6050;font-size:0.78rem">空宮</span>';
+    return `
+      <div class="aspect-card">
+        <div class="ac-header">
+          <span class="ac-name">${ASPECT_ICON[asp]||''} ${asp}</span>
+          <span class="ac-score" style="color:${color}">${info.score}</span>
+          <span class="ac-level" style="color:${color};background:${levelBg}">${info.level}</span>
+          <div class="ac-bar-wrap">
+            <div class="score-bar"><div class="score-fill" style="width:${info.score}%;background:${color}"></div></div>
+          </div>
+        </div>
+        <div class="ac-summary">${info.text}</div>
+        <div class="ac-detail">${info.detail}</div>
+        <div class="ac-stars">${starHtml}</div>
+      </div>`;
+  }).join('');
+
+  const ft = d.fan_taisui;
+  let taisuiHtml = '';
+  if (ft && ft.type) {
+    const icon = ft.severity === 'high' ? '⚠️' : ft.severity === 'medium' ? '🔶' : '🔷';
+    taisuiHtml = `
+      <div class="taisui-box ${ft.severity}">
+        <div class="taisui-icon">${icon}</div>
+        <div style="flex:1">
+          <div class="taisui-type">【${ft.type}】</div>
+          <div class="taisui-msg">${ft.message}</div>
+          <div class="taisui-remedy">💡 化解建議：${ft.remedy}</div>
+        </div>
+      </div>`;
+  }
+
+  document.getElementById('liunian-result').innerHTML =
+    `<div class="liunian-result-header">${metaHtml}</div>` +
+    taisuiHtml + overallHtml + aspectsHtml;
+}
+
+// ── 八字論命 ──────────────────────────────────────
+const WX_COL = {木:'#2ecc71',火:'#e74c3c',土:'#f39c12',金:'#f1c40f',水:'#3498db'};
+const WX_BG2 = {木:'rgba(46,204,113,0.15)',火:'rgba(231,76,60,0.15)',土:'rgba(243,156,18,0.15)',金:'rgba(241,196,15,0.15)',水:'rgba(52,152,219,0.15)'};
+const SS_COLOR = {
+  '比肩':'#ffd700','劫財':'#ffa500',
+  '食神':'#2ecc71','傷官':'#1abc9c',
+  '正財':'#3498db','偏財':'#5dade2',
+  '正官':'#9b59b6','七殺':'#e74c3c',
+  '正印':'#e91e8c','偏印':'#f39c12',
+};
+const PILLAR_NAMES = {year:'年柱', month:'月柱', day:'日柱', hour:'時柱'};
+
+function renderBazi(d) {
+  const el = document.getElementById('tab-bazi');
+  if (!d || d.error) { el.innerHTML = `<div class="error-msg">❌ ${d ? d.error : '八字計算失敗'}</div>`; return; }
+
+  const warnHtml = d.near_jie_warning
+    ? `<div class="warn-msg">⚠ 出生日期接近節氣分界，月柱可能存在誤差，建議對照萬年曆確認。</div>` : '';
+
+  // 四柱
+  let pillarsHtml = '<div class="bz-pillars">';
+  for (const pos of ['year','month','day','hour']) {
+    const p = d.pillars[pos];
+    const isDay = (pos === 'day');
+    const ssHtml = isDay
+      ? `<div class="bz-ss" style="background:rgba(255,215,0,0.12);color:#ffd700">日主</div>`
+      : `<div class="bz-ss" style="background:${WX_BG2[WX_COL[p.stem_wx]]||'rgba(255,215,0,0.1)'};color:${SS_COLOR[p.shi_shen]||'#ffd700'}">${p.shi_shen}</div>`;
+    const hiddenHtml = p.hidden.length
+      ? `<div class="bz-hidden">藏：${p.hidden.map(h=>`<span style="color:${WX_COL[GAN_WX_MAP[h]]||'#b8a88a'}">${h}</span>`).join(' ')}</div>` : '';
+    pillarsHtml += `
+      <div class="bz-pillar">
+        <div class="bz-pillar-name">${PILLAR_NAMES[pos]}</div>
+        <div class="bz-gz">${p.ganzhi}</div>
+        <div class="bz-wx-row">
+          <span style="color:${WX_COL[p.stem_wx]}">${p.stem_wx}</span>
+          <span style="color:#6a6050">/</span>
+          <span style="color:${WX_COL[p.branch_wx]}">${p.branch_wx}</span>
+        </div>
+        ${ssHtml}
+        <div class="bz-nayin">${p.nayin}（<span style="color:${WX_COL[p.nayin_wx]}">${p.nayin_wx}</span>）</div>
+        ${hiddenHtml}
+      </div>`;
+  }
+  pillarsHtml += '</div>';
+
+  // 日主資訊
+  const dm = d.day_master;
+  const dmColor = WX_COL[dm.element] || '#ffd700';
+
+  // 五行統計長條圖
+  const wxMax = Math.max(...Object.values(d.wx_scores), 1);
+  let wxHtml = '<div class="bz-wx-chart">';
+  for (const [wx, score] of Object.entries(d.wx_scores)) {
+    const pct = Math.round((score / wxMax) * 100);
+    wxHtml += `
+      <div class="bz-wx-bar-wrap">
+        <div class="bz-wx-label" style="color:${WX_COL[wx]}">${wx}</div>
+        <div class="bz-wx-bar-outer">
+          <div class="bz-wx-bar-fill" style="height:${pct}%;background:${WX_COL[wx]}"></div>
+        </div>
+        <div class="bz-wx-score">${score}</div>
+      </div>`;
+  }
+  wxHtml += '</div>';
+
+  // 日主強弱 + 喜用神
+  const str = d.strength;
+  const strColor = str.score >= 65 ? '#e74c3c' : str.score <= 42 ? '#3498db' : '#f39c12';
+  const ys = d.yong_shen;
+  const xiHtml  = ys.xi.map(wx=>`<span class="bz-tag" style="background:${WX_BG2[wx]};color:${WX_COL[wx]}">${wx} 喜</span>`).join('');
+  const jiHtml  = ys.ji.map(wx=>`<span class="bz-tag" style="background:rgba(100,100,100,0.1);color:#888">${wx} 忌</span>`).join('');
+  const strengthHtml = `
+    <div class="bz-strength">
+      <div>
+        <div style="font-size:0.78rem;color:#b8a88a;margin-bottom:2px">日主</div>
+        <span class="bz-strength-label" style="color:${dmColor}">${dm.stem}（${dm.element}）</span>
+        <span style="font-size:0.82rem;color:#b8a88a">${dm.yang?'陽':'陰'}${dm.element}</span>
+      </div>
+      <div>
+        <div style="font-size:0.78rem;color:#b8a88a;margin-bottom:2px">強弱</div>
+        <span class="bz-strength-label" style="color:${strColor}">${str.label}</span>
+        <span style="font-size:0.82rem;color:#b8a88a">（${str.score}分）</span>
+      </div>
+      <div class="bz-yong">
+        <div class="bz-yong-title">喜用神 / 忌神</div>
+        <div style="margin-bottom:6px">${xiHtml}${jiHtml}</div>
+        <div class="bz-yong-exp">${ys.explanation}</div>
+      </div>
+    </div>`;
+
+  // 大運
+  const dyInfo = d.dayun_start;
+  const currentAge = new Date().getFullYear() - parseInt(document.getElementById('inp-year').value);
+  let dyHtml = `<div class="bz-dayun-title">▶ 大運排列（${dyInfo.forward ? '順行' : '逆行'}，${dyInfo.year}歲${dyInfo.month>0?dyInfo.month+'個月':''}起運）</div>`;
+  dyHtml += '<div class="bz-dayun-grid">';
+  for (const dy of d.dayun) {
+    const isCurr = d.current_dayun && dy.ganzhi === d.current_dayun.ganzhi;
+    const ssC = SS_COLOR[dy.shi_shen] || '#ffd700';
+    dyHtml += `
+      <div class="bz-dy-cell${isCurr?' current':''}">
+        <div class="bz-dy-gz">${dy.ganzhi}</div>
+        <div style="font-size:0.74rem;color:#b8a88a;margin-top:2px">
+          <span style="color:${WX_COL[dy.stem_wx]}">${dy.stem_wx}</span>/<span style="color:${WX_COL[dy.branch_wx]}">${dy.branch_wx}</span>
+        </div>
+        <div class="bz-dy-ss" style="background:${WX_BG2[WX_COL[dy.stem_wx]]||'rgba(255,215,0,0.1)'};color:${ssC}">${dy.shi_shen}</div>
+        <div class="bz-dy-age">${dy.age_start}～${dy.age_end}歲</div>
+        ${isCurr ? '<div style="font-size:0.7rem;color:#ffd700;margin-top:3px">▶ 目前</div>' : ''}
+      </div>`;
+  }
+  dyHtml += '</div>';
+
+  // 入口說明
+  const introHtml = `
+    <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,215,0,0.15);border-radius:10px;padding:1rem 1.2rem;margin-bottom:1.2rem;font-size:0.88rem;color:#b8a88a;line-height:1.7">
+      <span style="color:#ffd700">▶ 八字簡介</span>
+      八字（四柱命理）以出生年、月、日、時各一柱共八個字推算命格。
+      日主（日柱天干）代表本人，透過五行強弱與喜用神判斷最適合的發展方向與化解之道。
+      節氣界定月份，立春前後為年柱分界，請注意「月柱」的節氣確認。
+    </div>`;
+
+  // 命格解說
+  const SUMMARY_COLOR = {
+    '日主性格':'#ffd700','月柱環境':'#2ecc71','年柱祖蔭':'#b8a88a',
+    '時柱晚運':'#9b59b6','命格方向':'#f39c12','適合行業':'#3498db',
+  };
+  let summaryHtml = '';
+  if (d.summary && d.summary.length) {
+    summaryHtml = `
+      <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,215,0,0.15);border-radius:10px;padding:1.2rem;margin-top:1.2rem">
+        <div style="color:#ffd700;font-size:0.95rem;letter-spacing:0.1em;margin-bottom:1rem">▶ 命格總體解說</div>
+        <div style="display:flex;flex-direction:column;gap:0.8rem">
+          ${d.summary.map(([label, text]) => {
+            const c = SUMMARY_COLOR[label] || '#ffd700';
+            return `<div style="display:flex;gap:0.8rem;align-items:flex-start">
+              <span style="min-width:4.5em;color:${c};font-weight:bold;font-size:0.9rem;padding-top:0.1rem;flex-shrink:0">【${label}】</span>
+              <span style="color:#c0b8a8;font-size:0.92rem;line-height:1.75">${text}</span>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+  }
+
+  el.innerHTML = warnHtml + introHtml + pillarsHtml + wxHtml + strengthHtml + summaryHtml + dyHtml;
+}
+
+const GAN_WX_MAP = {甲:'木',乙:'木',丙:'火',丁:'火',戊:'土',己:'土',庚:'金',辛:'金',壬:'水',癸:'水'};
+</script>
+</body>
+</html>

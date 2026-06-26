@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+sjms_deploy.zip
+error.jpg
+run.bat
+提示詞.txt
